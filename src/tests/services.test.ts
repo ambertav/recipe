@@ -5,6 +5,8 @@
 import * as ingredientService from '@/lib/ingredients/service';
 import { ingredientData, unitData } from '@/lib/ingredients/mock';
 
+import * as instructionService from '@/lib/instructions/service';
+
 describe('ingredient service', () => {
     beforeEach(() => {
         localStorage.clear();
@@ -53,7 +55,7 @@ describe('ingredient service', () => {
         };
 
         const updated = ingredientService.createOrUpdate(updatedInput);
-        expect(updated.id).toBe(original.id);
+        expect(updated.id).toEqual(original.id);
 
         const stored = JSON.parse(localStorage.getItem('ingredientUsages')!);
         expect(stored.length).toBe(1);
@@ -66,8 +68,70 @@ describe('ingredient service', () => {
         const data = ingredientService.createOrUpdate(input);
 
         const stored = ingredientService.getData();
-        
+
         expect(Array.isArray(stored)).toBe(true);
         expect(stored).toContainEqual(data);
     });
+});
+
+describe('instruction service', () => {
+    beforeEach(() => {
+        localStorage.clear();
+        jest.clearAllMocks();
+    });
+
+    test('createOrUpdate creates a new Instruction when id is empty', () => {
+        const input = {
+            id: '',
+            content: [{ type: 'paragraph' as const, children: [{ text: 'this should be' }, { text: 'bold', bold: true }] }],
+            note: '',
+            timerMinutes: 0,
+        };
+
+        const instruction = instructionService.createOrUpdate(input);
+        expect(instruction.id).not.toBe('');
+
+        const stored = JSON.parse(localStorage.getItem('instructions')!);
+        expect(stored.length).toBe(1);
+    });
+
+    test('createOrUpdate updates a new Instruction when id is provided', () => {
+        const input = {
+            id: '',
+            content: [{ type: 'paragraph' as const, children: [{ text: 'this should be' }, { text: 'bold', bold: true }] }],
+            note: '',
+            timerMinutes: 0,
+        };
+
+        const original = instructionService.createOrUpdate(input);
+        const updatedInput = {
+            ...input,
+            id: original.id,
+            content: [{ type: 'paragraph' as const, children: [{ text: 'this should be' }, { text: 'italicized', italic: true }] }],
+        };
+
+        const updated = instructionService.createOrUpdate(updatedInput);
+        expect(updated.id).toEqual(original.id);
+
+        const stored = JSON.parse(localStorage.getItem('instructions')!);
+        expect(stored.length).toBe(1);
+
+        expect(stored[0].content[0].children[1]).toHaveProperty('italic');
+        expect(stored[0].content[0].children[1]).toEqual({ text: 'italicized', italic: true });
+    });
+
+    test('getData returns parsed data from localStorage', () => {
+        const input = {
+            id: '',
+            content: [{ type: 'paragraph' as const, children: [{ text: 'this should be' }, { text: 'bold', bold: true }] }],
+            note: '',
+            timerMinutes: 0,
+        };
+
+        const data = instructionService.createOrUpdate(input);
+        const stored = instructionService.getData();
+        expect(Array.isArray(stored)).toBe(true);
+        expect(stored).toContainEqual(data);
+    });
+
 });
