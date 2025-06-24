@@ -21,6 +21,9 @@ export interface InstructionInput {
 export type IngredientReferenceElement = {
     type: 'ingredient-usage-reference';
     ingredientUsageId: string;
+    quantity: number;
+    unit: string;
+    percentage: number;
     children: CustomText[];
 };
 
