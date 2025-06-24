@@ -10,11 +10,11 @@ import { CustomTextKey } from '@/types';
 export default function Toolbar ()  {
   const ref = useRef<HTMLDivElement | null>(null);
   const editor: Editor = useSlate();
+  const { selection } = editor;
   const inFocus = useFocused();
 
   useEffect(() => {
     const el = ref.current;
-    const { selection } = editor;
 
     if (!el) return;
 
@@ -31,7 +31,7 @@ export default function Toolbar ()  {
 
     el.style.opacity = '1';
     el.style.pointerEvents = 'auto';
-  }, [editor.selection, inFocus]);
+  }, [selection, inFocus]);
 
   return (
     <div

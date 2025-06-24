@@ -1,6 +1,6 @@
-import { RenderLeafProps } from 'slate-react';
+import { RenderLeafProps, RenderElementProps } from 'slate-react';
 
-export const IngredientElement = ({ attributes, children, element }: any) => {
+export const IngredientElement = ({ attributes, children, element }: RenderElementProps) => {
   switch (element.type) {
     case 'ingredient-usage-reference':
       return (

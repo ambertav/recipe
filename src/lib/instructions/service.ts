@@ -25,8 +25,8 @@ export function getData(): Instruction[] {
     if (!data) return [];
     try {
         return JSON.parse(data);
-    } catch (error) {
-        console.error('Failed to parse instructions data from local storage');
+    } catch (error: unknown) {
+        console.error('Failed to parse instructions data from local storage:', error);
         return [];
     }
 }

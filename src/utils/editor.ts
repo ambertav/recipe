@@ -15,12 +15,12 @@ export const toggleMark = (editor: Editor, format: CustomTextKey) => {
 
 
 export const withInlines = (editor : Editor) => {
-  const { isInline, isVoid } = editor;
+  const { isInline } = editor;
 
-  editor.isInline = element =>
+  editor.isInline = (element) =>
     element.type === 'ingredient-usage-reference' ? true : isInline(element);
 
-  editor.isVoid = element => false;
+  editor.isVoid = () => false;
 
   return editor;
 };

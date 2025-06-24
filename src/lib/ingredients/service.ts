@@ -48,8 +48,8 @@ export function getData(): IngredientUsage[] {
     if (!data) return [];
     try {
         return JSON.parse(data);
-    } catch (error) {
-        console.error('Failed to parse ingredient usage data from local storage');
+    } catch (error: unknown) {
+        console.error('Failed to parse ingredient usage data from local storage:', error);
         return [];
     }
 }

@@ -1,6 +1,14 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Overview
+This project replicates the core UI and behavior of the original recipe creation form’s ingredient and instruction inputs, providing a minimal but functional duplicate of the interface.
+
+
+- Includes support for ingredient-usage-reference by typing @ followed by an ingredient name.
+- Can specify an optional percentage using (int) syntax — e.g., @Flour(50) will create a reference to "Flour" and display 50% of the quantity.
+- Use the default percentage of 100, by pressing Tab or Enter to confirm the reference before the timeout automatically inserts it.
 
 ## Getting Started
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 First, run the development server:
 

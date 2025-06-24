@@ -7,7 +7,7 @@ import { IngredientUsageInput } from '@/types';
 
 import * as ingredientService from '@/lib/ingredients/service';
 
-import AutoCompleteInput from '@/app/components/AutoCompleteInput';
+import AutoCompleteInput from '@/app/components/ingredient/AutoCompleteInput';
 
 export default function IngredientForm () {
       const ingredientSuggestions = ingredientData.flatMap((item) => [
@@ -53,6 +53,7 @@ export default function IngredientForm () {
         const saved: IngredientUsage = ingredientService.createOrUpdate(entry);
         updated[index] = { ...entry, id: saved.id };
         setIngredientGroup(updated);
+        window.dispatchEvent(new Event('ingredients-updated'));
       } catch (error) {
         console.error('Failed to save ingredient usage:', error);
       }

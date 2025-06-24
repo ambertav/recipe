@@ -12,6 +12,7 @@ import { InstructionInput } from '@/types';
 import { IngredientUsage } from '@/lib/ingredients/schema';
 
 import Toolbar from './Toolbar';
+import IngredientDropdown from './Dropdown';
 import { IngredientElement, Leaf } from './RenderElements';
 
 export default function InstructionForm() {
@@ -28,26 +29,24 @@ export default function InstructionForm() {
   const [ingredientUsages, setIngredientUsages] = useState<IngredientUsage[]>(
     []
   );
-
   const [editors, setEditors] = useState(() =>
     instructionsGroup.map(() => withInlines(withReact(createEditor())))
-  );
+  ); // slate editors corresponding to each instruction
 
-  const [targetRange, setTargetRange] = useState<Range | null>(null);
-  const [search, setSearch] = useState('');
-  const [ingredientIndex, setIngredientIndex] = useState(-1);
+  // state for parsing input for triggering ingredient reference creation
+  const [targetRange, setTargetRange] = useState<Range | null>(null); // slate range dropdown should appear
+  const [search, setSearch] = useState(''); // string after '@'
+  const [ingredientIndex, setIngredientIndex] = useState(-1); // index of selected ingredient for reference creation
   const [dropdownEditorIndex, setDropdownEditorIndex] = useState<number | null>(
     null
-  );
-
-  // for delayed reference insertion, allowing to input percentage
+  ); // index of editor currently showing dropdown
   const [pendingReference, setPendingReference] = useState<{
     ingredient: IngredientUsage;
     editor: Editor;
     range: Range;
     editorIndex: number;
     timeoutId: NodeJS.Timeout;
-  } | null>(null);
+  } | null>(null); // for delayed reference insertion, allowing to input percentage
 
   const insertPendingReference = (percentage: number = 100) => {
     if (pendingReference) {
@@ -66,7 +65,7 @@ export default function InstructionForm() {
     event: React.KeyboardEvent<HTMLDivElement>,
     editor: Editor
   ) => {
-    // handles pending reference state
+    // handles keydown for pending reference state
     if (pendingReference) {
       switch (event.key) {
         case 'Tab':
@@ -82,6 +81,7 @@ export default function InstructionForm() {
       }
     }
 
+    // handles keydown for selecting from dropdown
     if (targetRange) {
       switch (event.key) {
         case 'ArrowDown':
@@ -134,33 +134,32 @@ export default function InstructionForm() {
     });
     if (!after) return;
 
-const currentRange = {
-  anchor: targetRange.anchor,
-  focus: after,
-};
+    const currentRange = {
+      anchor: targetRange.anchor,
+      focus: after,
+    };
 
-const currentReference = {
-  ingredient,
-  editor,
-  range: currentRange,
-  editorIndex: dropdownEditorIndex!,
-};
+    const currentReference = {
+      ingredient,
+      editor,
+      range: currentRange,
+      editorIndex: dropdownEditorIndex!,
+    };
 
-const timeoutId = setTimeout(() => {
-  instructionService.insertIngredientReference(
-    currentReference.editor,
-    currentReference.ingredient,
-    100,
-    currentReference.range
-  );
-  setPendingReference(null); // clear stale reference
-}, 1000);
+    const timeoutId = setTimeout(() => {
+      instructionService.insertIngredientReference(
+        currentReference.editor,
+        currentReference.ingredient,
+        100,
+        currentReference.range
+      );
+      setPendingReference(null); // clear stale reference
+    }, 2000);
 
-setPendingReference({
-  ...currentReference,
-  timeoutId,
-});
-
+    setPendingReference({
+      ...currentReference,
+      timeoutId,
+    });
   };
 
   const filteredIngredients = search
@@ -169,7 +168,8 @@ setPendingReference({
       )
     : ingredientUsages;
 
-  const handleAddInstruction = () => {
+  // adds new input field group
+  const handleAddInstructionInput = () => {
     setInstructionsGroup((prev) => [
       ...prev,
       {
@@ -188,6 +188,7 @@ setPendingReference({
     setEditors((prev) => [...prev, withInlines(withReact(createEditor()))]);
   };
 
+  // updates input and runs detection logic for triggering ingredient reference creation
   const handleChangeWithDetection = (
     editor: Editor,
     value: Descendant[],
@@ -208,27 +209,26 @@ setPendingReference({
         pendingReference.editorIndex === instructionIndex
       ) {
         const didUpdatePercentage = detectPercentageAfterIngredientName(editor);
-        if (didUpdatePercentage) {
-          return;
-        }
+        if (didUpdatePercentage) return;
       }
 
-      const wordBefore = Editor.before(editor, start, { unit: 'word' });
-      const beforeRange = wordBefore && Editor.range(editor, wordBefore, start);
-      const beforeText = beforeRange && Editor.string(editor, beforeRange);
+      const lineBefore = Editor.before(editor, start, { unit: 'line' });
+      const lineRange =
+        lineBefore && start ? { anchor: lineBefore, focus: start } : null;
+      const lineText = lineRange ? Editor.string(editor, lineRange) : '';
 
-      if (beforeText?.includes('@')) {
-        const atIndex = beforeText.lastIndexOf('@');
-        const mentionStart = Editor.before(editor, selection!.focus, {
-          distance: beforeText.length - atIndex,
+      const match = lineText.match(/@(\w*)$/);
+
+      if (match) {
+        const mentionStart = Editor.before(editor, start, {
+          distance: match[0].length,
+          unit: 'character',
         });
+
         if (mentionStart) {
-          const mentionRange = Editor.range(
-            editor,
-            mentionStart,
-            selection!.focus
-          );
-          const mentionText = Editor.string(editor, mentionRange).slice(1); // skip '@'
+          const mentionRange = { anchor: mentionStart, focus: start };
+          const mentionText = match[1]; // skip '@'
+
           setTargetRange(mentionRange);
           setSearch(mentionText);
           setIngredientIndex(-1);
@@ -242,6 +242,7 @@ setPendingReference({
     setSearch('');
   };
 
+  // handles detecting of percentage input
   const detectPercentageAfterIngredientName = (editor: Editor) => {
     if (!pendingReference) return false;
 
@@ -295,15 +296,14 @@ setPendingReference({
     }
   };
 
+  // fetches instruction data from localstorage
   useEffect(() => {
     const storedInstructions = instructionService.getData() || [];
     if (storedInstructions.length > 0)
       setInstructionsGroup(storedInstructions as []);
-
-    const storedIngredients = ingredientService.getData() || [];
-    setIngredientUsages(storedIngredients);
   }, []);
 
+  // fills in editors with fetched instruction data
   useEffect(() => {
     setEditors((prev) => {
       const newEditors = [...prev];
@@ -314,6 +314,21 @@ setPendingReference({
     });
   }, [instructionsGroup.length]);
 
+  // fetches and maintains updated ingredientUsage array
+  useEffect(() => {
+    const handleUpdate = () => {
+      setIngredientUsages(ingredientService.getData() || []);
+    };
+
+    window.addEventListener('ingredients-updated', handleUpdate);
+    handleUpdate();
+
+    return () => {
+      window.removeEventListener('ingredients-updated', handleUpdate);
+    };
+  }, []);
+
+  // clears timeout on unmount
   useEffect(() => {
     return () => {
       if (pendingReference) clearTimeout(pendingReference.timeoutId);
@@ -364,25 +379,14 @@ setPendingReference({
                   {dropdownEditorIndex === index &&
                     targetRange &&
                     filteredIngredients.length > 0 && (
-                      <ul className="absolute bg-white border border-gray-300 rounded shadow max-h-48 overflow-auto z-20">
-                        {filteredIngredients.map((usage, i) => (
-                          <li
-                            key={usage.id}
-                            className={`px-3 py-1 cursor-pointer ${
-                              i === ingredientIndex
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white text-black'
-                            }`}
-                            onMouseDown={(e) => {
-                              e.preventDefault(); // prevent editor blur
-                              handleIngredientSelection(usage, editors[index]);
-                            }}
-                            onMouseEnter={() => setIngredientIndex(i)}
-                          >
-                            {usage.ingredient.title}
-                          </li>
-                        ))}
-                      </ul>
+                      <IngredientDropdown
+                        ingredients={filteredIngredients}
+                        selectedIndex={ingredientIndex}
+                        onSelect={(usage) =>
+                          handleIngredientSelection(usage, editors[index])
+                        }
+                        onHover={setIngredientIndex}
+                      />
                     )}
                 </Slate>
               )}
@@ -392,7 +396,7 @@ setPendingReference({
       ))}
 
       <button
-        onClick={handleAddInstruction}
+        onClick={handleAddInstructionInput}
         className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         type="button"
       >
